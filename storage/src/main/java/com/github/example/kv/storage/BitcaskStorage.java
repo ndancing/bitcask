@@ -1,10 +1,10 @@
 package com.github.example.kv.storage;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,7 +119,7 @@ public class BitcaskStorage implements MergeableKeyValueStorage<String, String> 
 		 * */
 		final List<File> mergeableFiles = Arrays.stream(getStoredFilesSortedByCreationTime(ComparableFileName.SortType.ASC))
 			.limit(numberOfStoredFiles - 1L)
-			.collect(Collectors.toList());
+			.toList();
 
 		/**
 		 * Scan from closest to furthest mergeable files -> Build a key-value mapping from each one
@@ -148,36 +147,37 @@ public class BitcaskStorage implements MergeableKeyValueStorage<String, String> 
 		final String compactedFilePath = mergeableFiles.get(mergeableFiles.size() - 1).getPath() + FileLogConstant.COMPACT_FILE_SUFFIX;
 		final File compactedFile = new File(compactedFilePath);
 		compactedFile.createNewFile();
-		final BufferedOutputStream compactedFileOutputStream = new BufferedOutputStream(new FileOutputStream(compactedFile, true));
 
 		final File closestMergedFile = new File(
 			compactedFilePath.substring(0, compactedFilePath.length() - FileLogConstant.COMPACT_FILE_SUFFIX.length())
 		);
 
-		final Iterator<Map.Entry<String, MetaData>> iterator = mergedFilesMetaDataContainer.entrySet().iterator();
-		while (iterator.hasNext()) {
-			final Map.Entry<String, MetaData> entry = iterator.next();
-			final FileLog fileLog = new FileLog(entry.getValue().getTimestamp(), entry.getKey().getBytes().length, entry.getValue().getValueSize(),
-				entry.getKey(), mergedFilesKeyValueMapping.get(entry.getKey())
-			);
-			/**
-			 * Remove deleted key (tombstone value)
-			 * */
-			if (FileLogConstant.TOMBSTONE.equals(fileLog.getValue())) {
-				iterator.remove();
-			} else {
-				try {
-					final FileLogWriteResult writeResult = fileIO.writeTo(fileLog, compactedFile, compactedFileOutputStream);
-					entry.setValue(MetaData.valueOf(fileLog, closestMergedFile.getPath(), writeResult.getValueByteOffset()));
-				} catch (IOException e) {
-					LOGGER.error("Error occurs when write to compacted file {}, file log={}", compactedFile.getPath(), fileLog, e);
+		try (FileOutputStream compactedFileOutputStream = new FileOutputStream(compactedFile.getPath())) {
+			final FileChannel compactedFileChannel = compactedFileOutputStream.getChannel();
+			final Iterator<Map.Entry<String, MetaData>> iterator = mergedFilesMetaDataContainer.entrySet().iterator();
+			while (iterator.hasNext()) {
+				final Map.Entry<String, MetaData> entry = iterator.next();
+				final FileLog fileLog = new FileLog(entry.getValue().getTimestamp(), entry.getKey().getBytes().length, entry.getValue().getValueSize(),
+					entry.getKey(), mergedFilesKeyValueMapping.get(entry.getKey())
+				);
+				/**
+				 * Remove deleted key (tombstone value)
+				 * */
+				if (FileLogConstant.TOMBSTONE.equals(fileLog.getValue())) {
+					iterator.remove();
+				} else {
+					try {
+						final FileLogWriteResult writeResult = fileIO.writeTo(fileLog, compactedFile, compactedFileChannel);
+						entry.setValue(MetaData.valueOf(fileLog, closestMergedFile.getPath(), writeResult.getValueByteOffset()));
+					} catch (IOException e) {
+						LOGGER.error("Error occurs when write to compacted file {}, file log={}", compactedFile.getPath(), fileLog, e);
+					}
 				}
 			}
+			compactedFileChannel.close();
 		}
 
-		compactedFileOutputStream.close();
-
-		mergeableFiles.forEach(fileIO::remove);
+		mergeableFiles.forEach(fileIO::removeFile);
 
 		compactedFile.renameTo(closestMergedFile);
 

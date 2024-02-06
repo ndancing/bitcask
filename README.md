@@ -22,10 +22,10 @@ https://riak.com/assets/bitcask-intro.pdf
 
 | Properties      | Description             | Default Value |
 |-----------------|-------------------------|---------------|
-| storageDir      | Data stored directory   | N/A           |
+| storageDir      | Data stored directory   | /bcask        |
 | cacheEnabled    | Enable/disable cache    | true          |
 | cacheSize       | Cache size (if enabled) | 10000         |
-| fileSizeLimit   | Data file size limit    | 1MB           |
+| fileSizeLimit   | Data file size limit    | 10MB          |
 | mergePeriodMils | Data file merge period  | 5 mins        |
 
 **2. Start a Bitcask Server**
@@ -124,15 +124,17 @@ Steps
 
 **Storage Benchmark**
 
-- Environment: MacBook Pro (16-inch, 2021), Apple M1 Pro, 16GB, SSD 512GB
+- Environment: MacBook Pro (16-inch, 2021), Apple M1 Pro, 16GB, SSD 512GB. Amazon Corretto 17
 - No buffered file output
 - No cache enabled
 
 | Method | File Size | Number of keys | Key size (bytes) | Value size (bytes) | Time (secs) | Memory usage (MB) | 
 |--------|-----------|----------------|------------------|--------------------|-------------|-------------------|
-| Put    | 10MB      | 1 000 000      | 8                | 128                | 7,67        | 542               |
-| Get    | 10MB      | 1 000 000      | 8                | 128                | 1,42        |                   |
-| Put    | 10MB      | 1 000 000      | 16               | 256                | 8,17        | 759               |
-| Get    | 10MB      | 1 000 000      | 16               | 256                | 1,58        |                   |
-| Put    | 100MB     | 5 000 000      | 8                | 128                | 39,94       | 2573              |
-| Get    | 100MB     | 5 000 000      | 8                | 128                | 7,60        |                   |
+| Put    | 10MB      | 1 000 000      | 8                | 128                | 3,70        | 481               |
+| Get    | 10MB      | 1 000 000      | 8                | 128                | 0,97        |                   |
+| Put    | 10MB      | 1 000 000      | 16               | 256                | 3,94        | 757               |
+| Get    | 10MB      | 1 000 000      | 16               | 256                | 0,99        |                   |
+| Put    | 100MB     | 5 000 000      | 8                | 128                | 18,53       | 2144              |
+| Get    | 100MB     | 5 000 000      | 8                | 128                | 5,43        |                   |
+| Put    | 100MB     | 10 000 000     | 8                | 128                | 38,13       | 3603              |
+| Get    | 100MB     | 10 000 000     | 8                | 128                | 11,39       |                   |

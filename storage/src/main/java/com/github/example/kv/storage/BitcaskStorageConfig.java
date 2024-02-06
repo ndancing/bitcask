@@ -8,7 +8,7 @@ public class BitcaskStorageConfig {
 	}
 
 	public static final String DEFAULT_STORAGE_DIR = "/bcask";
-	public static final int DEFAULT_FILE_SIZE_LIMIT = 1024000;
+	public static final int DEFAULT_FILE_SIZE_LIMIT = 10240000;
 	public static final boolean DEFAULT_CACHE_ENABLED = true;
 	public static final int DEFAULT_CACHE_SIZE = 10000;
 	public static final int DEFAULT_MERGE_PERIOD_MILS = 300000;
