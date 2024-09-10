@@ -47,7 +47,7 @@ server.start();
 Execution:
 ```shell
 mvn clean install
-mvn exec:java -Dexec.mainClass=com.github.example.kv.server.Application -Dport=6868 -DstorageDir=/data/bcask
+mvn exec:java -Dexec.mainClass=com.github.ndancing.kv.server.Application -Dport=6868 -DstorageDir=/data/bcask
 ```
 **3. Command Line**
 
